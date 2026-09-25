@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Your event in Besarabia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/themes/dark.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<style>
+  :root {
+    --night: #120A2E;
+    --night-deep: #07041A;
+    --magenta: #FF2E9A;
+    --green: #2EF2A0;
+    --blue: #3D7BFF;
+    --paper: #F3EEFF;
+    --muted: #A99BD6;
+    --line: rgba(243, 238, 255, 0.2);
+    --error: #FF8A7A;
+    --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+    --body: "Golos Text", "Segoe UI", system-ui, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(60% 40% at 0% 0%, rgba(255,46,154,.28), transparent 70%),
+      radial-gradient(55% 40% at 100% 10%, rgba(61,123,255,.30), transparent 70%),
+      radial-gradient(60% 40% at 50% 100%, rgba(46,242,160,.14), transparent 70%),
+      linear-gradient(var(--night), var(--night-deep));
+    background-attachment: fixed;
+    color: var(--paper);
+    font: 400 1.0625rem/1.55 var(--body);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 3.5rem 1.25rem 4rem; }
+
+  /* Marquee with bulbs cycling magenta / green / blue */
+  .marquee {
+    position: relative;
+    border: 2px solid var(--line);
+    border-radius: 14px;
+    padding: 2.1rem 1.6rem 1.8rem;
+    margin-bottom: 2.75rem;
+  }
+  .marquee::before {
+    content: "";
+    position: absolute; inset: 7px;
+    border-radius: 9px;
+    background-image:
+      radial-gradient(circle at 11px 11px, var(--magenta) 0 2.6px, transparent 3.3px),
+      radial-gradient(circle at 33px 11px, var(--green) 0 2.6px, transparent 3.3px),
+      radial-gradient(circle at 55px 11px, var(--blue) 0 2.6px, transparent 3.3px);
+    background-size: 66px 22px;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    padding: 5px;
+    filter: saturate(1.2) drop-shadow(0 0 3px rgba(255,255,255,.35));
+    animation: chase 1.2s steps(3) 3;
+  }
+  @keyframes chase { to { background-position: 66px 0; } }
+  .marquee h1 {
+    font: 800 clamp(1.8rem, 6.2vw, 2.7rem)/1.08 var(--display);
+    color: var(--paper);
+    margin: 0 0 .9rem;
+    letter-spacing: -.01em;
+    text-shadow: -2px 0 0 var(--magenta), 2px 0 0 var(--blue), 0 0 22px rgba(46,242,160,.35);
+  }
+  .marquee p { margin: 0; max-width: 34em; opacity: .85; }
+
+  fieldset { border: 0; padding: 0; margin: 0 0 2.25rem; }
+  [hidden] { display: none !important; }
+  legend { font: 800 1.3rem/1.25 var(--display); margin-bottom: 1rem; padding: 0; letter-spacing: -.005em; }
+  legend { color: var(--magenta); text-shadow: 0 0 16px rgba(255,46,154,.6); }
+
+  /* Exact date / range toggle */
+  .seg { display: inline-flex; gap: 2px; padding: 3px; border: 1.5px solid var(--line); border-radius: 999px; margin-bottom: 1rem; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span { display: block; padding: .42rem 1rem; border-radius: 999px; font-size: .93rem; font-weight: 500; cursor: pointer; transition: background .15s; }
+  .seg span:hover { background: rgba(61,123,255,.15); }
+  .seg input:checked + span { background: var(--blue); color: #fff; }
+  .seg input:focus-visible + span { outline: 2px solid var(--green); outline-offset: 2px; }
+  .acum { margin-top: 1.4rem; }
+  .acum .seg { margin-bottom: 0; }
+  .guests { max-width: calc(50% - .5rem); }
+  @media (max-width: 480px) { .guests { max-width: none; } }
+  .hint { font-size: .9rem; color: var(--muted); margin: -.6rem 0 1rem; }
+
+  /* Event type tiles — magenta */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; }
+  .tile input, .chip input { position: absolute; opacity: 0; pointer-events: none; }
+  .tile span {
+    display: block; padding: .95rem 1rem;
+    border: 1.5px solid var(--line); border-radius: 10px;
+    font-weight: 500; cursor: pointer;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  .tile span:hover { border-color: var(--magenta); }
+  .tile input:checked + span {
+    background: var(--magenta); border-color: var(--magenta); color: #fff;
+    box-shadow: 0 0 20px rgba(255,46,154,.45);
+  }
+  .tile input:focus-visible + span, .chip input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 3px; }
+
+  /* Extras chips — green */
+  .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .chip span {
+    display: inline-block; padding: .5rem .95rem;
+    border: 1.5px solid var(--line); border-radius: 999px;
+    font-size: .95rem; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .chip span:hover { border-color: var(--green); }
+  .chip input:checked + span { border-color: var(--green); background: rgba(46,242,160,.14); color: var(--green); }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 480px) { .row { grid-template-columns: 1fr; } }
+  .field { margin-bottom: 1.1rem; }
+  label.lbl { display: block; font-size: .92rem; font-weight: 500; margin-bottom: .35rem; opacity: .9; }
+  .opt { font-weight: 400; color: var(--muted); }
+
+  /* Inputs — blue focus */
+  input[type=text], input[type=tel], input[type=number],
+  input[type=date], input[type=time], textarea {
+    width: 100%;
+    background: rgba(0,0,0,.28);
+    border: 1.5px solid var(--line); border-radius: 8px;
+    color: var(--paper); font: inherit;
+    padding: .7rem .85rem;
+    color-scheme: dark;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  textarea { min-height: 120px; resize: vertical; }
+  input::placeholder, textarea::placeholder { color: rgba(243,238,255,.38); }
+  input:focus, textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(61,123,255,.25); }
+  .invalid { border-color: var(--error) !important; }
+  .err { color: var(--error); font-size: .88rem; margin-top: .35rem; display: none; }
+  .err.show { display: block; }
+
+  button[type=submit] {
+    width: 100%;
+    background: var(--magenta); color: #fff;
+    border: 0; border-radius: 10px;
+    padding: 1.05rem;
+    font: 800 1.05rem var(--display);
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--blue);
+    transition: transform .1s, box-shadow .1s;
+  }
+  button[type=submit]:hover { box-shadow: 6px 6px 0 var(--blue); transform: translate(-1px, -1px); }
+  button[type=submit]:active { box-shadow: 1px 1px 0 var(--blue); transform: translate(3px, 3px); }
+  button[type=submit]:disabled { opacity: .6; cursor: wait; }
+  .formerr { color: var(--error); margin-top: .8rem; text-align: center; }
+
+  .done { display: none; }
+  .done.show { display: block; }
+  .done h2 { font: 800 1.8rem/1.15 var(--display); color: var(--green); margin: 0 0 .8rem; }
+  .done button {
+    margin-top: 1.5rem; background: none; border: 1.5px solid var(--line);
+    color: var(--paper); border-radius: 8px; padding: .65rem 1.1rem; font: inherit; cursor: pointer;
+  }
+  .done button:hover { border-color: var(--blue); }
+
+  /* Calendar popup in the page palette */
+  .flatpickr-calendar { background: var(--night); border: 1.5px solid var(--line); box-shadow: 0 12px 40px rgba(0,0,0,.5); font-family: var(--body); }
+  .flatpickr-calendar.arrowTop::after, .flatpickr-calendar.arrowTop::before { border-bottom-color: var(--night); }
+  .flatpickr-calendar.arrowBottom::after, .flatpickr-calendar.arrowBottom::before { border-top-color: var(--night); }
+  .flatpickr-months .flatpickr-month, .flatpickr-weekdays, span.flatpickr-weekday,
+  .flatpickr-current-month .flatpickr-monthDropdown-months { background: var(--night); }
+  .flatpickr-day.today { border-color: var(--blue); }
+  .flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.selected:focus {
+    background: var(--magenta); border-color: var(--magenta); color: #fff;
+  }
+  .flatpickr-day:hover, .flatpickr-day:focus { background: rgba(61,123,255,.25); border-color: transparent; }
+  input.flatpickr-input { cursor: pointer; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="marquee">
+    <h1>Your event in Besarabia</h1>
+    <p>A gig, a stand-up night, a party or a birthday. Tell us what you have in mind and we'll get back to you with dates and terms.</p>
+  </header>
+
+  <form id="booking" novalidate>
+    <fieldset>
+      <legend>What are you planning?</legend>
+      <div class="tiles" role="radiogroup" aria-label="Event type">
+        <label class="tile"><input type="radio" name="eventType" value="Concert"><span>Concert</span></label>
+        <label class="tile"><input type="radio" name="eventType" value="Stand-up"><span>Stand-up</span></label>
+        <label class="tile"><input type="radio" name="eventType" value="Party"><span>Party</span></label>
+        <label class="tile"><input type="radio" name="eventType" value="Birthday"><span>Birthday</span></label>
+        <label class="tile"><input type="radio" name="eventType" value="Corporate event"><span>Corporate event</span></label>
+        <label class="tile"><input type="radio" name="eventType" value="Other"><span>Something else</span></label>
+      </div>
+      <div class="err" id="err-eventType">Choose an event type</div>
+      <div class="field acum" id="acumBox" hidden>
+        <label class="lbl" id="acumLabel">Is your music registered with ACUM (<bdi lang="he">אקו״ם</bdi>)?</label>
+        <div class="seg" role="radiogroup" aria-labelledby="acumLabel">
+          <label><input type="radio" name="acum" value="Yes"><span>Yes</span></label>
+          <label><input type="radio" name="acum" value="No"><span>No</span></label>
+          <label><input type="radio" name="acum" value="Not sure"><span>Not sure</span></label>
+        </div>
+        <div class="err" id="err-acum">Let us know whether your music is registered with ACUM</div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>When and how many guests</legend>
+      <div class="seg" role="radiogroup" aria-label="Date type">
+        <label><input type="radio" name="dateMode" value="exact" checked><span>Exact date</span></label>
+        <label><input type="radio" name="dateMode" value="range"><span>Date range</span></label>
+      </div>
+      <div class="row" id="exactBox">
+        <div class="field">
+          <label class="lbl" for="date">Date</label>
+          <input type="text" id="date" name="date" placeholder="DD/MM/YYYY" autocomplete="off">
+        </div>
+      </div>
+      <div class="row" id="rangeBox" hidden>
+        <div class="field">
+          <label class="lbl" for="dateFrom">Earliest date</label>
+          <input type="text" id="dateFrom" name="dateFrom" placeholder="DD/MM/YYYY" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="lbl" for="dateTo">Latest date <span class="opt">(optional)</span></label>
+          <input type="text" id="dateTo" name="dateTo" placeholder="DD/MM/YYYY" autocomplete="off">
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl" id="wdLabel">Preferred days <span class="opt">(optional)</span></label>
+        <div class="chips" role="group" aria-labelledby="wdLabel">
+          <label class="chip"><input type="checkbox" name="weekdays" value="Monday"><span>Mon</span></label>
+          <label class="chip"><input type="checkbox" name="weekdays" value="Tuesday"><span>Tue</span></label>
+          <label class="chip"><input type="checkbox" name="weekdays" value="Wednesday"><span>Wed</span></label>
+          <label class="chip"><input type="checkbox" name="weekdays" value="Thursday"><span>Thu</span></label>
+          <label class="chip"><input type="checkbox" name="weekdays" value="Friday"><span>Fri</span></label>
+          <label class="chip"><input type="checkbox" name="weekdays" value="Saturday"><span>Sat</span></label>
+          <label class="chip"><input type="checkbox" name="weekdays" value="Sunday"><span>Sun</span></label>
+        </div>
+        <div class="err" id="err-when">Pick a date, a date range or at least one preferred day</div>
+        <div class="err" id="err-range">The latest date can't be before the earliest one</div>
+      </div>
+      <div class="field guests">
+        <label class="lbl" for="guests">Expected guests</label>
+        <input type="number" id="guests" name="guests" min="1" inputmode="numeric" placeholder="50">
+        <div class="err" id="err-guests">Enter the number of guests</div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label class="lbl" for="timeFrom">Starts at</label>
+          <input type="time" id="timeFrom" name="timeFrom">
+        </div>
+        <div class="field">
+          <label class="lbl" for="timeTo">Ends at</label>
+          <input type="time" id="timeTo" name="timeTo">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>What you'll need</legend>
+      <p class="hint">Pick everything that applies. We'll sort out the details later.</p>
+      <div class="chips">
+        <label class="chip"><input type="checkbox" name="extras" value="Lighting"><span>Lighting</span></label>
+        <label class="chip"><input type="checkbox" name="extras" value="Sound engineer"><span>Sound engineer</span></label>
+        <label class="chip"><input type="checkbox" name="extras" value="Door person (ticketed event)"><span>Door person (ticketed event)</span></label>
+        <label class="chip"><input type="checkbox" name="extras" value="Private event"><span>Private event</span></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>How do we reach you?</legend>
+      <div class="field">
+        <label class="lbl" for="name">Name</label>
+        <input type="text" id="name" name="name" autocomplete="name">
+        <div class="err" id="err-name">Tell us your name</div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label class="lbl" for="phone">Phone</label>
+          <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+972 ...">
+          <div class="err" id="err-phone">Enter a phone number</div>
+        </div>
+        <div class="field">
+          <label class="lbl" for="contact">Telegram or email <span class="opt">(optional)</span></label>
+          <input type="text" id="contact" name="contact" placeholder="@username">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Details</legend>
+      <div class="field">
+        <label class="lbl" for="details">Tell us about the event <span class="opt">(optional)</span></label>
+        <textarea id="details" name="details" placeholder="Who's performing, the format, your budget, any special requests"></textarea>
+      </div>
+    </fieldset>
+
+    <button type="submit" id="submitBtn">Send request</button>
+    <p class="formerr" id="formErr" hidden>The request didn't go through. Check your connection and try again.</p>
+  </form>
+
+  <section class="done" id="done" aria-live="polite">
+    <h2>Request sent</h2>
+    <p>We'll be in touch soon to go over the details and terms.</p>
+    <button type="button" id="again">Send another request</button>
+  </section>
+</main>
+
+<script>
+/* =========================================================
+   SETUP: paste the web app URL from Google Apps Script here
+   (it looks like https://script.google.com/macros/s/.../exec).
+   While it is empty the form runs in demo mode
+   (nothing is sent; data is logged to the console).
+   ========================================================= */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHzc0-z5a_5eE2mti0VNOdHyjCbpjSnBLGiQZzi7y5oZPlZE3p38Lsh1wr-ka0fzm4/exec";
+
+const form = document.getElementById("booking");
+const done = document.getElementById("done");
+const btn = document.getElementById("submitBtn");
+const formErr = document.getElementById("formErr");
+
+const $ = id => document.getElementById(id);
+const pickerOpts = { dateFormat: "d/m/Y", minDate: "today", disableMobile: true };
+const fpDate = flatpickr($("date"), pickerOpts);
+const fpTo = flatpickr($("dateTo"), pickerOpts);
+const fpFrom = flatpickr($("dateFrom"), {
+  ...pickerOpts,
+  onChange: ([d]) => fpTo.set("minDate", d || "today")
+});
+const mode = () => form.querySelector('[name="dateMode"]:checked').value;
+
+function updateMode() {
+  $("exactBox").hidden = mode() !== "exact";
+  $("rangeBox").hidden = mode() !== "range";
+}
+form.addEventListener("change", e => {
+  if (e.target.name === "dateMode") updateMode();
+  if (e.target.name === "eventType") updateAcum();
+});
+
+function updateAcum() {
+  const isConcert = form.querySelector('[name="eventType"]:checked')?.value === "Concert";
+  $("acumBox").hidden = !isConcert;
+  if (!isConcert) {
+    form.querySelectorAll('[name="acum"]').forEach(r => r.checked = false);
+    setErr("acum", false);
+  }
+}
+
+function dateText(fd) {
+  if (mode() === "exact") return fd.get("date") || "";
+  const from = fd.get("dateFrom"), to = fd.get("dateTo");
+  if (from && to) return `${from} – ${to}`;
+  if (from) return `from ${from}`;
+  return "";
+}
+
+function collect() {
+  const fd = new FormData(form);
+  return {
+    eventType: fd.get("eventType") || "",
+    acum: fd.get("eventType") === "Concert" ? (fd.get("acum") || "") : "",
+    date: dateText(fd),
+    weekdays: fd.getAll("weekdays").join(", "),
+    timeFrom: fd.get("timeFrom") || "",
+    timeTo: fd.get("timeTo") || "",
+    guests: fd.get("guests") || "",
+    extras: fd.getAll("extras").join(", "),
+    name: (fd.get("name") || "").trim(),
+    phone: (fd.get("phone") || "").trim(),
+    contact: (fd.get("contact") || "").trim(),
+    details: (fd.get("details") || "").trim()
+  };
+}
+
+function setErr(key, bad) {
+  document.getElementById("err-" + key).classList.toggle("show", bad);
+  const input = document.getElementById(key);
+  if (input) input.classList.toggle("invalid", bad);
+  return bad;
+}
+
+function validate(data) {
+  const from = fpFrom.selectedDates[0], to = fpTo.selectedDates[0];
+  const checks = {
+    eventType: !data.eventType,
+    acum: data.eventType === "Concert" && !data.acum,
+    when: !data.date && !data.weekdays,
+    range: mode() === "range" && from && to && to < from,
+    guests: !data.guests || Number(data.guests) < 1,
+    name: !data.name,
+    phone: data.phone.replace(/\D/g, "").length < 7
+  };
+  const focusTarget = {
+    eventType: () => form.querySelector('[name="eventType"]'),
+    acum: () => form.querySelector('[name="acum"]'),
+    when: () => mode() === "exact" ? $("date") : $("dateFrom"),
+    range: () => $("dateTo")
+  };
+  let first = null;
+  for (const [k, bad] of Object.entries(checks)) {
+    if (setErr(k, bad) && !first) first = k;
+  }
+  if (first) (focusTarget[first] ? focusTarget[first]() : $(first)).focus();
+  return !first;
+}
+
+const dateFields = ["date", "dateFrom", "dateTo", "weekdays", "dateMode"];
+const clearErr = e => {
+  const key = e.target.name;
+  if (dateFields.includes(key)) { setErr("when", false); setErr("range", false); }
+  else if ($("err-" + key)) setErr(key, false);
+};
+form.addEventListener("input", clearErr);
+form.addEventListener("change", clearErr);
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  formErr.hidden = true;
+  const data = collect();
+  if (!validate(data)) return;
+
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+
+  try {
+    if (SCRIPT_URL) {
+      await fetch(SCRIPT_URL, {
+        method: "POST", mode: "no-cors", body: new URLSearchParams(data)
+      });
+    } else {
+      console.log("Demo mode, request:", data);
+      await new Promise(r => setTimeout(r, 600));
+    }
+    form.hidden = true;
+    done.classList.add("show");
+    done.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    formErr.hidden = false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Send request";
+  }
+});
+
+document.getElementById("again").addEventListener("click", () => {
+  form.reset();
+  updateMode();
+  updateAcum();
+  [fpDate, fpFrom, fpTo].forEach(fp => fp.clear());
+  fpTo.set("minDate", "today");
+  form.hidden = false;
+  done.classList.remove("show");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+</script>
+</body>
+</html>
